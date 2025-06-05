@@ -26,6 +26,8 @@ inputs:
     required: false
     default: '/tmp/metaeffekt-kontinuum'
 
+
+
 outputs:
   resolved-inventory:
     description: 'Path to the resolved inventory file'
@@ -47,7 +49,7 @@ runs:
           echo "::error::Shared config file not found: $CONFIG_FILE"
           exit 1
         fi
-        
+                
         if [[ -z "$KONTINUUM_VERSION" || -z "$DOWNLOAD_URL" ]]; then
           echo "::error::Failed to parse configuration from $CONFIG_FILE"
           exit 1
@@ -73,7 +75,7 @@ runs:
       shell: bash
       run: |
         VERSION="${{ steps.load-config.outputs.kontinuum-version }}"
-        DOWNLOAD_URL="${{ steps.load-config.outputs.download-url }}/v${VERSION}/kontinuum-${VERSION}.zip"
+        DOWNLOAD_URL="${{ steps.load-config.outputs.download-url }}/${VERSION}.zip"
         
         echo "Downloading metaeffekt-kontinuum v${VERSION}"
         echo "URL: ${DOWNLOAD_URL}"
