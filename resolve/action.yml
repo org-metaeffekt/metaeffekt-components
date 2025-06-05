@@ -32,7 +32,7 @@ runs:
   steps:
     - name: Setup metaeffekt-kontinuum
       id: setup-kontinuum
-      uses: org-metaeffekt/metaeffekt-components/setup-kontinuum@main # TODO This has to change when we start creating releases
+      uses: ${{ github.action_path }}/../setup-kontinuum
       with:
         cache-dependencies: ${{ inputs.cache-dependencies }}
 
