@@ -117,7 +117,7 @@ runs:
           -DoutputInventoryFile="${{ inputs.output-path }}" \
           -DdownloadBaseDir="/tmp/downloads" \
           -DartifactResolverConfig="${{ inputs.resolver-config }}" \
-          -DproxyConfig="${{ inputs.resolver-proxy }}"
+          -DproxyConfig="${{ inputs.resolver-proxy }}" -X
         
         if [[ ! -f "${{ inputs.output-path }}" ]]; then
           echo "::error::Output file was not created: ${{ inputs.output-path }}"
