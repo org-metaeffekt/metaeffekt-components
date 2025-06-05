@@ -112,7 +112,7 @@ runs:
         
         mkdir -p "/tmp/downloads"
             
-        mv /tmp/metaeffekt-kontinuum/analyze_resolve-inventory.xml ~
+        mv /tmp/metaeffekt-kontinuum/analyze_resolve-inventory.xml .
             
         mvn -f "analyze_resolve-inventory.xml" process-resources \
           -DinputInventoryFile="${{ inputs.input-path }}" \
