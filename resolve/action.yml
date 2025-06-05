@@ -16,11 +16,11 @@ inputs:
   resolver-config:
     description: 'Path to the artifact resolver config file.'
     required: false
-    default: ${{ github.action_path }}/../shared/artifact-resolver-config.yaml
+    default: ../shared/artifact-resolver-config.yaml
   resolver-proxy:
     description: 'Path to the proxy config file for the resolver.'
     required: false
-    default: ${{ github.action_path }}/../shared/artifact-resolver-proxy.yaml
+    default: ../shared/artifact-resolver-proxy.yaml
 
 outputs:
   resolved-inventory:
@@ -32,7 +32,7 @@ runs:
   steps:
     - name: Setup metaeffekt-kontinuum
       id: setup-kontinuum
-      uses: ${{ github.action_path }}/../setup-kontinuum
+      uses: ../setup-kontinuum
       with:
         cache-dependencies: ${{ inputs.cache-dependencies }}
 
