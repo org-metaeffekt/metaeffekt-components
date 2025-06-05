@@ -1,5 +1,5 @@
-name: 'Setup metaeffektl-kontinuum'
-description: 'Loads configuration and sets up metaeffektl-kontinuum with optional caching'
+name: 'Setup metaeffekt-kontinuum'
+description: 'Loads configuration and sets up metaeffekt-kontinuum with optional caching'
 author: '{metaeffekt} GmbH'
 
 inputs:
@@ -10,16 +10,16 @@ inputs:
 
 outputs:
   kontinuum-version:
-    description: 'Version of metaeffektl-kontinuum that was set up'
+    description: 'Version of metaeffekt-kontinuum that was set up'
     value: ${{ steps.load-config.outputs.kontinuum-version }}
   download-url:
-    description: 'Download URL used for metaeffektl-kontinuum'
+    description: 'Download URL used for metaeffekt-kontinuum'
     value: ${{ steps.load-config.outputs.download-url }}
   cache-hit:
     description: 'Whether dependencies were restored from cache'
     value: ${{ steps.restore-cache.outputs.cache-hit }}
   kontinuum-path:
-    description: 'Path where metaeffektl-kontinuum is installed'
+    description: 'Path where metaeffekt-kontinuum is installed'
     value: '/tmp/metaeffekt-kontinuum'
 
 runs:
@@ -39,7 +39,9 @@ runs:
         KONTINUUM_VERSION=$(grep -A1 "kontinuum:" "$CONFIG_FILE" | grep "version:" | sed 's/.*version: *"\(.*\)".*/\1/')
         DOWNLOAD_URL=$(grep -A2 "kontinuum:" "$CONFIG_FILE" | grep "download_base_url:" | sed 's/.*download_base_url: *"\(.*\)".*/\1/')
                 
-        echo "Using metaeffektl-kontinuum version: $KONTINUUM_VERSION"
+        echo "kontinuum-version=$KONTINUUM_VERSION" >> $GITHUB_OUTPUT
+        echo "download-url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+        echo "Using metaeffekt-kontinuum version: $KONTINUUM_VERSION"
 
     - name: Restore cached dependencies
       id: restore-cache
