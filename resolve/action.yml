@@ -112,6 +112,8 @@ runs:
         
         mkdir -p "/tmp/downloads"
         
+        pwd
+        
         mvn -f "/tmp/metaeffekt-kontinuum/analyze_resolve-inventory.xml" process-resources \
           -DinputInventoryFile="${{ inputs.input-path }}" \
           -DoutputInventoryFile="${{ inputs.output-path }}" \
