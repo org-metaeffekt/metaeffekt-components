@@ -11,7 +11,7 @@ To ensure compatibility, java 1.8 (zulu / corretto) and maven 3.9 are recommende
 
 ### Resolve Inventory
 - **Path**: `resolve`
-- **Usage**: `uses: YOUR_USERNAME/YOUR_REPO_NAME/resolve@v1`
+- **Usage**: `uses: org-metaeffekt/metaeffekt-components/resolve@VERSION_TAG`
 - **Description**: Fetches additional information for software artifacts listed in an inventory
 
 
