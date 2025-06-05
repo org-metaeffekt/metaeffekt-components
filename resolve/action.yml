@@ -68,16 +68,17 @@ runs:
           metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-
 
     - name: Download metaeffekt-kontinuum
+      id: download-kontinuum
       if: inputs.cache-dependencies != 'true' || steps.restore-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         VERSION="${{ steps.load-config.outputs.kontinuum-version }}"
         DOWNLOAD_URL="${{ steps.load-config.outputs.download-url }}/v${VERSION}/kontinuum-${VERSION}.zip"
         
-        echo "Downloading MetaEffekt Kontinuum v${VERSION}"
+        echo "Downloading metaeffekt-kontinuum v${VERSION}"
         echo "URL: ${DOWNLOAD_URL}"
         
-        mkdir -p "${{ inputs.working-directory }}"  # Fixed: added quotes and ${{}}
+        mkdir -p "${{ inputs.working-directory }}"
         cd "${{ inputs.working-directory }}"
         
         curl -L -o kontinuum.zip "$DOWNLOAD_URL"
@@ -90,12 +91,10 @@ runs:
         unzip -q kontinuum.zip
         rm kontinuum.zip
         
-        if [[ ! -f resolved_inventory-resolver.xml ]]; then
+        if [[ ! -f analyze_resolve-inventory.xml ]]; then
           echo "::error::Expected file 'resolved_inventory-resolver.xml' not found"
           exit 1
         fi
-        
-        echo "MetaEffekt Kontinuum downloaded and extracted successfully"
 
     - name: Save dependencies to cache
       if: inputs.cache-dependencies == 'true' && steps.restore-cache.outputs.cache-hit != 'true'
@@ -117,7 +116,7 @@ runs:
         
         mkdir -p "${{ inputs.working-directory }}/downloads"
         
-        mvn -f "${{ inputs.working-directory }}/resolved_inventory-resolver.xml" process-resources \
+        mvn -f "${{ inputs.working-directory }}/analyze_resolve-inventory.xml" process-resources \
           -DinputInventoryFile="${{ inputs.input-path }}" \
           -DoutputInventoryFile="${{ inputs.output-path }}" \
           -DdownloadBaseDir="${{ inputs.working-directory }}/downloads" \
