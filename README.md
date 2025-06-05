@@ -1,6 +1,6 @@
 # {metaeffekt} Actions
 
-[![Test Actions](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/test-actions.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/test-actions.yml)
+[![Test Actions](https://github.com/org-metaeffekt/metaeffekt-components/actions/workflows/test-actions.yml/badge.svg?branch=main)](https://github.com/org-metaeffekt/metaeffekt-components/actions/workflows/test-actions.yml)
 
 ## Necessary Prerequisites
 
