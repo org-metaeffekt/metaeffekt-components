@@ -21,11 +21,6 @@ inputs:
     description: 'Path to the proxy config file for the resolver.'
     required: false
     default: ${{ github.action_path }}/../shared/artifact-resolver-proxy.yaml
-  working-directory:
-    description: 'The working directory in which intermediaries will be saved and steps performed.'
-    required: false
-    default: '/tmp/metaeffekt-kontinuum'
-
 
 
 outputs:
@@ -64,7 +59,7 @@ runs:
       if: inputs.cache-dependencies == 'true'
       uses: actions/cache/restore@v4
       with:
-        path: ${{ inputs.working-directory }}
+        path: /tmp/metaeffekt-kontinuum
         key: metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-${{ runner.os }}
         restore-keys: |
           metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-
@@ -80,20 +75,19 @@ runs:
         echo "Downloading metaeffekt-kontinuum v${VERSION}"
         echo "URL: ${DOWNLOAD_URL}"
         
-        mkdir -p "${{ inputs.working-directory }}"
-        cd "${{ inputs.working-directory }}"
+        mkdir -p "/tmp/metaeffekt-kontinuum"
         
-        curl -L -o kontinuum.zip "$DOWNLOAD_URL"
+        curl -L -o /tmp/metaeffekt-kontinuum/kontinuum.zip "$DOWNLOAD_URL"
         
-        if [[ ! -f kontinuum.zip ]]; then
+        if [[ ! -f /tmp/metaeffekt-kontinuum/kontinuum.zip ]]; then
           echo "::error::Failed to download kontinuum.zip"
           exit 1
         fi
         
-        unzip -q -n -j kontinuum.zip
-        rm kontinuum.zip
+        unzip -q -n -j /tmp/metaeffekt-kontinuum/kontinuum.zip
+        rm /tmp/metaeffekt-kontinuum/kontinuum.zip
         
-        if [[ ! -f analyze_resolve-inventory.xml ]]; then
+        if [[ ! -f /tmp/metaeffekt-kontinuum/analyze_resolve-inventory.xml ]]; then
           echo "::error::Expected file 'resolved_inventory-resolver.xml' not found"
           exit 1
         fi
@@ -102,7 +96,7 @@ runs:
       if: inputs.cache-dependencies == 'true' && steps.restore-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
-        path: ${{ inputs.working-directory }}
+        path: /tmp/metaeffekt-kontinuum
         key: metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-${{ runner.os }}
 
     - name: Resolve inventory
@@ -116,12 +110,12 @@ runs:
           exit 1
         fi
         
-        mkdir -p "${{ inputs.working-directory }}/downloads"
+        mkdir -p "/tmp/downloads"
         
-        mvn -f "${{ inputs.working-directory }}/analyze_resolve-inventory.xml" process-resources \
+        mvn -f "/tmp/metaeffekt-kontinuum/analyze_resolve-inventory.xml" process-resources \
           -DinputInventoryFile="${{ inputs.input-path }}" \
           -DoutputInventoryFile="${{ inputs.output-path }}" \
-          -DdownloadBaseDir="${{ inputs.working-directory }}/downloads" \
+          -DdownloadBaseDir="/tmp/downloads" \
           -DartifactResolverConfig="${{ inputs.resolver-config }}" \
           -DproxyConfig="${{ inputs.resolver-proxy }}"
         
