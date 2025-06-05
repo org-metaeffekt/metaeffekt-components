@@ -1,0 +1,83 @@
+name: 'Setup metaeffektl-kontinuum'
+description: 'Loads configuration and sets up metaeffektl-kontinuum with optional caching'
+author: '{metaeffekt} GmbH'
+
+inputs:
+  cache-dependencies:
+    description: 'Whether to cache the downloaded kontinuum dependencies'
+    required: false
+    default: 'false'
+
+outputs:
+  kontinuum-version:
+    description: 'Version of metaeffektl-kontinuum that was set up'
+    value: ${{ steps.load-config.outputs.kontinuum-version }}
+  download-url:
+    description: 'Download URL used for metaeffektl-kontinuum'
+    value: ${{ steps.load-config.outputs.download-url }}
+  cache-hit:
+    description: 'Whether dependencies were restored from cache'
+    value: ${{ steps.restore-cache.outputs.cache-hit }}
+  kontinuum-path:
+    description: 'Path where metaeffektl-kontinuum is installed'
+    value: '/tmp/metaeffekt-kontinuum'
+
+runs:
+  using: composite
+  steps:
+    - name: Load shared configuration
+      id: load-config
+      shell: bash
+      run: |
+        CONFIG_FILE="${{ github.action_path }}/../shared/config.yml"
+        
+        if [[ ! -f "$CONFIG_FILE" ]]; then
+          echo "::error::Shared config file not found: $CONFIG_FILE"
+          exit 1
+        fi
+        
+        KONTINUUM_VERSION=$(grep -A1 "kontinuum:" "$CONFIG_FILE" | grep "version:" | sed 's/.*version: *"\(.*\)".*/\1/')
+        DOWNLOAD_URL=$(grep -A2 "kontinuum:" "$CONFIG_FILE" | grep "download_base_url:" | sed 's/.*download_base_url: *"\(.*\)".*/\1/')
+                
+        echo "Using metaeffektl-kontinuum version: $KONTINUUM_VERSION"
+
+    - name: Restore cached dependencies
+      id: restore-cache
+      if: inputs.cache-dependencies == 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: /tmp/metaeffekt-kontinuum
+        key: metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-${{ runner.os }}
+        restore-keys: |
+          metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-
+
+    - name: Download metaeffekt-kontinuum
+      id: download-kontinuum
+      if: inputs.cache-dependencies != 'true' || steps.restore-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        VERSION="${{ steps.load-config.outputs.kontinuum-version }}"
+        DOWNLOAD_URL="${{ steps.load-config.outputs.download-url }}/${VERSION}.zip"
+        
+        echo "Downloading metaeffekt-kontinuum v${VERSION}"
+        echo "URL: ${DOWNLOAD_URL}"
+        
+        mkdir -p "/tmp/metaeffekt-kontinuum"
+        
+        curl -L -f -o /tmp/metaeffekt-kontinuum/kontinuum.zip "$DOWNLOAD_URL"
+           
+        
+        if [[ ! -f /tmp/metaeffekt-kontinuum/kontinuum.zip ]]; then
+          echo "::error::Failed to download kontinuum.zip."
+          exit 1
+        fi
+        
+        unzip -q -o -j /tmp/metaeffekt-kontinuum/kontinuum.zip -d /tmp/metaeffekt-kontinuum
+        rm /tmp/metaeffekt-kontinuum/kontinuum.zip
+
+    - name: Save dependencies to cache
+      if: inputs.cache-dependencies == 'true' && steps.restore-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: /tmp/metaeffekt-kontinuum
+        key: metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-${{ runner.os }}
