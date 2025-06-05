@@ -84,11 +84,11 @@ runs:
           exit 1
         fi
         
-        unzip -q -n -j /tmp/metaeffekt-kontinuum/kontinuum.zip
+        unzip -q -o -j /tmp/metaeffekt-kontinuum/kontinuum.zip -d /tmp/metaeffekt-kontinuum
         rm /tmp/metaeffekt-kontinuum/kontinuum.zip
         
         if [[ ! -f /tmp/metaeffekt-kontinuum/analyze_resolve-inventory.xml ]]; then
-          echo "::error::Expected file 'resolved_inventory-resolver.xml' not found"
+          echo "::error::Expected file 'analyze_resolve-inventory.xml' not found"
           exit 1
         fi
 
