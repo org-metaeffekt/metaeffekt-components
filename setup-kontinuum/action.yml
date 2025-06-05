@@ -29,7 +29,7 @@ runs:
       id: load-config
       shell: bash
       run: |
-        CONFIG_FILE="../shared/config.yml"
+        CONFIG_FILE="${{ github.action_path }}/../shared/config.yml"
         
         if [[ ! -f "$CONFIG_FILE" ]]; then
           echo "::error::Shared config file not found: $CONFIG_FILE"
