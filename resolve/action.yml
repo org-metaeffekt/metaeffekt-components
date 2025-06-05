@@ -38,7 +38,7 @@ runs:
       id: load-config
       shell: bash
       run: |
-        CONFIG_FILE="${{ github.action_path }}/../../shared/config.yml"
+        CONFIG_FILE="${{ github.action_path }}/../shared/config.yml"
         
         if [[ -f "$CONFIG_FILE" ]]; then
           KONTINUUM_VERSION=$(grep -A1 "kontinuum:" "$CONFIG_FILE" | grep "version:" | sed 's/.*version: *"\(.*\)".*/\1/')
