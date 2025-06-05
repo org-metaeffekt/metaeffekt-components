@@ -1,0 +1,133 @@
+name: 'Resolve Inventory'
+description: 'Fetches additional information for software artifacts listed in an inventory using metaeffekt-kontinuum'
+author: '{metaeffekt} GmbH'
+
+inputs:
+  cache-dependencies:
+    description: 'Cache dependencies to speed up subsequent runs, as well as all other actions contained in this repo.'
+    required: false
+    default: 'false'
+  input-path:
+    description: 'Path to the input inventory file to resolve.'
+    required: true
+  output-path:
+    description: 'Path where the resolved inventory will be saved.'
+    required: true
+  resolver-config:
+    description: 'Path to the artifact resolver config file.'
+    required: false
+    default: ${{ github.action_path }}/../../shared/artifact-resolver-config.yaml
+  resolver-proxy:
+    description: 'Path to the proxy config file for the resolver.'
+    required: false
+    default: ${{ github.action_path }}/../../shared/artifact-resolver-proxy.yaml
+  working-directory:
+    description: 'The working directory in which intermediaries will be saved and steps performed.'
+    required: false
+    default: '/tmp/metaeffekt-kontinuum'
+
+outputs:
+  resolved-inventory:
+    description: 'Path to the resolved inventory file'
+    value: ${{ inputs.output-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Load shared configuration
+      id: load-config
+      shell: bash
+      run: |
+        CONFIG_FILE="${{ github.action_path }}/../../shared/config.yml"
+        
+        if [[ -f "$CONFIG_FILE" ]]; then
+          KONTINUUM_VERSION=$(grep -A1 "kontinuum:" "$CONFIG_FILE" | grep "version:" | sed 's/.*version: *"\(.*\)".*/\1/')
+          DOWNLOAD_URL=$(grep -A2 "kontinuum:" "$CONFIG_FILE" | grep "download_base_url:" | sed 's/.*download_base_url: *"\(.*\)".*/\1/')
+        else
+          echo "::error::Shared config file not found: $CONFIG_FILE"
+          exit 1
+        fi
+        
+        if [[ -z "$KONTINUUM_VERSION" || -z "$DOWNLOAD_URL" ]]; then
+          echo "::error::Failed to parse configuration from $CONFIG_FILE"
+          exit 1
+        fi
+        
+        echo "kontinuum-version=$KONTINUUM_VERSION" >> $GITHUB_OUTPUT
+        echo "download-url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+        echo "Using MetaEffekt Kontinuum version: $KONTINUUM_VERSION"
+
+    - name: Restore cached dependencies
+      id: restore-cache
+      if: inputs.cache-dependencies == 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ inputs.working-directory }}
+        key: metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-${{ runner.os }}
+        restore-keys: |
+          metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-
+
+    - name: Download metaeffekt-kontinuum
+      if: inputs.cache-dependencies != 'true' || steps.restore-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        VERSION="${{ steps.load-config.outputs.kontinuum-version }}"
+        DOWNLOAD_URL="${{ steps.load-config.outputs.download-url }}/v${VERSION}/kontinuum-${VERSION}.zip"
+        
+        echo "Downloading MetaEffekt Kontinuum v${VERSION}"
+        echo "URL: ${DOWNLOAD_URL}"
+        
+        mkdir -p "${{ inputs.working-directory }}"  # Fixed: added quotes and ${{}}
+        cd "${{ inputs.working-directory }}"
+        
+        curl -L -o kontinuum.zip "$DOWNLOAD_URL"
+        
+        if [[ ! -f kontinuum.zip ]]; then
+          echo "::error::Failed to download kontinuum.zip"
+          exit 1
+        fi
+        
+        unzip -q kontinuum.zip
+        rm kontinuum.zip
+        
+        if [[ ! -f resolved_inventory-resolver.xml ]]; then
+          echo "::error::Expected file 'resolved_inventory-resolver.xml' not found"
+          exit 1
+        fi
+        
+        echo "MetaEffekt Kontinuum downloaded and extracted successfully"
+
+    - name: Save dependencies to cache
+      if: inputs.cache-dependencies == 'true' && steps.restore-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.working-directory }}
+        key: metaeffekt-kontinuum-${{ steps.load-config.outputs.kontinuum-version }}-${{ runner.os }}
+
+    - name: Resolve inventory
+      id: resolve
+      shell: bash
+      run: |
+        echo "Resolving inventory: ${{ inputs.input-path }} -> ${{ inputs.output-path }}"
+        
+        if ! command -v mvn &> /dev/null; then
+          echo "::error::Maven is not available. Please ensure Java and Maven are installed."
+          exit 1
+        fi
+        
+        mkdir -p "${{ inputs.working-directory }}/downloads"
+        
+        mvn -f "${{ inputs.working-directory }}/resolved_inventory-resolver.xml" process-resources \
+          -DinputInventoryFile="${{ inputs.input-path }}" \
+          -DoutputInventoryFile="${{ inputs.output-path }}" \
+          -DdownloadBaseDir="${{ inputs.working-directory }}/downloads" \
+          -DartifactResolverConfig="${{ inputs.resolver-config }}" \
+          -DproxyConfig="${{ inputs.resolver-proxy }}"
+        
+        if [[ ! -f "${{ inputs.output-path }}" ]]; then
+          echo "::error::Output file was not created: ${{ inputs.output-path }}"
+          exit 1
+        fi
+        
+        echo "Inventory resolved successfully"
+        echo "Output file size: $(du -h "${{ inputs.output-path }}" | cut -f1)"

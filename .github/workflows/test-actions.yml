@@ -1,0 +1,78 @@
+name: Test Actions
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  TEST_OUTPUT_DIR: '/tmp/outputs'
+
+concurrency:
+  group: test-actions-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-resolve-action:
+    name: Test Resolve Action
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+
+      - name: Test resolve action (without cache)
+        uses: ./resolve
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-resolved-nocache.xls'
+          resolver-config: 'shared/artifact-resolver-config.yaml'
+          resolver-proxy: 'shared/artifact-resolver-proxy.yaml'
+          cache-dependencies: 'false'
+
+      - name: Test resolve action (with cache)
+        uses: ./resolve
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-resolved-cache.xls'
+          resolver-config: 'shared/artifact-resolver-config.yaml'
+          resolver-proxy: 'shared/artifact-resolver-proxy.yaml'
+          cache-dependencies: 'true'
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-outputs-${{ matrix.os }}
+          path: $TEST_OUTPUT_DIR
+          retention-days: 7
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-resolve-action]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.test-resolve-action.result }}" == "success" ]]; then
+            echo "✅ Resolve action tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Resolve action tests: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
