@@ -1,0 +1,128 @@
+name: 'Enrich Inventory'
+description: 'Enriches software artifacts listed in an inventory with vulnerability information using metaeffekt-kontinuum'
+author: '{metaeffekt} GmbH'
+
+inputs:
+  cache-dependencies:
+    description: 'Cache dependencies to speed up subsequent runs, as well as all other actions contained in this repo.'
+    required: false
+    default: 'false'
+  input-path:
+    description: 'Path to the input inventory file to enrich.'
+    required: true
+  output-path:
+    description: 'Path where the enriched inventory will be saved.'
+    required: true
+
+  activate-msrc:
+    description: 'Activates enrichment via data provided by msrc.'
+    required: false
+    default: 'true'
+  activate-nvd:
+    description: 'Activates enrichment via data provided by nvd.'
+    required: false
+    default: 'true'
+  activate-certfr:
+    description: 'Activates enrichment via data provided by certfr.'
+    required: false
+    default: 'true'
+  activate-certeu:
+    description: 'Activates enrichment via data provided by certeu.'
+    required: false
+    default: 'true'
+  activate-certsei:
+    description: 'Activates enrichment via data provided by certsei.'
+    required: false
+    default: 'true'
+  activate-ghsa:
+    description: 'Activates enrichment via data provided by ghsa.'
+    required: false
+    default: 'true'
+  activate-kev:
+    description: 'Activates enrichment via data provided by kev.'
+    required: false
+    default: 'true'
+  activate-epss:
+    description: 'Activates enrichment via data provided by epss.'
+    required: false
+    default: 'true'
+  activate-eol:
+    description: 'Activates enrichment via data provided by eol.'
+    required: false
+    default: 'true'
+
+  activate-status:
+    description: 'Activates the vulnerability status column.'
+    required: false
+    default: 'true'
+  activate-keywords:
+    description: 'Activates the vulnerability keywords column.'
+    required: false
+    default: 'true'
+  activate-validation:
+    description: 'Activates the vulnerability validation column.'
+    required: false
+    default: 'false'
+
+  activate-custom-vulnerabilites:
+    description: 'Activates the incorporation of provided custom vulnerabilities in the enrichment process.'
+    required: false
+    default: 'false'
+  vulnerabilities-custom-directory:
+    description: 'Path to the directory containing custom vulnerability information'
+    required: false
+    default: ''
+
+
+outputs:
+  enriched-inventory:
+    description: 'Path to the enriched inventory file'
+    value: ${{ inputs.output-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup metaeffekt-kontinuum
+      id: setup-kontinuum
+      uses: org-metaeffekt/metaeffekt-components/setup-kontinuum@main
+      with:
+        cache-dependencies: ${{ inputs.cache-dependencies }}
+
+    - name: Enrich inventory
+      id: enrich
+      shell: bash
+      run: |
+        echo "Enriching inventory: ${{ inputs.input-path }} -> ${{ inputs.output-path }}"
+        echo "Using metaeffekt-kontinuum version ${{ steps.setup-kontinuum.outputs.kontinuum-version }}"
+        
+        if ! command -v mvn &> /dev/null; then
+          echo "::error::Maven is not available. Please ensure Java and Maven are installed."
+          exit 1
+        fi
+        
+        mkdir -p "/tmp/downloads"
+        
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/ae-workbench-parent.xml" .
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/advise_enrich-inventory.xml" .
+        
+        # Run Maven enrichment
+        mvn -f "advise_enrich-inventory.xml" process-resources \
+          -Dinput.inventory="${{ inputs.input-path }}" \
+          -Doutput.inventory="${{ inputs.output-path }}" \
+          -DdownloadBaseDir="/tmp/downloads" \
+          -Dactivate.msrc="${{ inputs.activate-msrc }}" \
+          -Dactivate.nvd="${{ inputs.activate-nvd }}" \
+          -Dactivate.certfr="${{ inputs.activate-certfr }}" \
+          -Dactivate.certeu="${{ inputs.activate-certeu }}" \
+          -Dactivate.certsei="${{ inputs.activate-certsei }}" \
+          -Dactivate.ghsa="${{ inputs.activate-ghsa }}" \
+          -Dactivate.kev="${{ inputs.activate-kev }}" \
+          -Dactivate.epss="${{ inputs.activate-epss }}" \
+          -Dactivate.eol="${{ inputs.activate-eol }}" \
+          -Dactivate.status="${{ inputs.activate-status }}" \
+          -Dactivate.keywords="${{ inputs.activate-keywords }}" \
+          -Dactivate.validation="${{ inputs.activate-validation }}" \
+          -Dactivate.vulnerabilities.custom="${{ inputs.activate-custom-vulnerabilities }}" \
+          -Dvulnerabilities.custom.dir="$CUSTOM_VULN_DIR
+        
+        rm -f ae-workbench-parent.xml advise_enrich-inventory.xml
