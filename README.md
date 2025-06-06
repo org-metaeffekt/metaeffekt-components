@@ -1,4 +1,4 @@
-# {metaeffekt} Actions
+# {metaeffekt} Components
 
 [![Test Actions](https://github.com/org-metaeffekt/metaeffekt-components/actions/workflows/test-actions.yml/badge.svg?branch=main)](https://github.com/org-metaeffekt/metaeffekt-components/actions/workflows/test-actions.yml)
 
