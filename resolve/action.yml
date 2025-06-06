@@ -32,7 +32,7 @@ runs:
   steps:
     - name: Setup metaeffekt-kontinuum
       id: setup-kontinuum
-      uses: org-metaeffekt/metaeffekt-components/setup-kontinuum@main
+      uses: org-metaeffekt/metaeffekt-components/setup-kontinuum@0.1.1
       with:
         cache-dependencies: ${{ inputs.cache-dependencies }}
 
