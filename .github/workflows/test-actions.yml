@@ -82,7 +82,7 @@ jobs:
         with:
           input-path: 'test/test-inventory.xls'
           output-path: '$TEST_OUTPUT_DIR/test-inventory-scanned-nocache.xls'
-          intermediary-dir-path: 'tmp/scan'
+          intermediary-dir-path: '/tmp/scan'
           scanner-config-file: './shared/scan-control.properties'
           cache-dependencies: 'false'
 
