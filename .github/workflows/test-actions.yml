@@ -59,6 +59,50 @@ jobs:
           path: '$TEST_OUTPUT_DIR'
           retention-days: 7
 
+  test-scan-action:
+    name: Test Scan Action
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+
+      - name: Test scan action (without cache)
+        uses: ./scan
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-scanned-nocache.xls'
+          intermediary-dir-path: 'tmp/scan'
+          scanner-config-file: './shared/scan-control.properties'
+          cache-dependencies: 'false'
+
+      - name: Test scan action (with cache)
+        uses: ./scan
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-scanned-cache.xls'
+          intermediary-dir-path: 'tmp/scan'
+          scanner-config-file: './shared/scan-control.properties'
+          cache-dependencies: 'true'
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-outputs-${{ matrix.os }}
+          path: '$TEST_OUTPUT_DIR'
+          retention-days: 7
+
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
@@ -75,4 +119,10 @@ jobs:
             echo "✅ Resolve action tests: PASSED" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Resolve action tests: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-scan-action.result }}" == "success" ]]; then
+            echo "✅ Scan action tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Scan action tests: FAILED" >> $GITHUB_STEP_SUMMARY
           fi
