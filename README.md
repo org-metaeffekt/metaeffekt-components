@@ -48,3 +48,19 @@ To ensure compatibility, java 1.8 (zulu / corretto) and maven 3.9 are recommende
 | activate-validation              | no       | Activates the vulnerability validation column.                                                       |
 | activate-custom-vulnerabilites   | no       | Activates incorporation of provided custom vulnerabilities in the enrichment process.                |
 | vulnerabilities-custom-directory | no       | Path to the directory containing custom vulnerability information.                                   |
+
+### Scan Inventory
+- **Path**: `scan`
+- **Usage**: `uses: org-metaeffekt/metaeffekt-components/scan@VERSION_TAG`
+- **Description**: Fetches licensing and copyright information for software artifacts listed in an inventory
+
+
+| Property              | Required | Explanation                                                                                                  |
+|-----------------------|----------|--------------------------------------------------------------------------------------------------------------|
+| cache-dependencies    | no       | Cache dependencies to speed up subsequent runs, as well as all other actions contained in this repo.         |
+| input-path            | yes      | Path to the input inventory file to resolve.                                                                 |
+| output-path           | yes      | Path where the resolved inventory will be saved.                                                             |
+| intermediary-dir-path | yes      | Path where intermediaries for the scan process will be stored temporarily                                    |
+| scanner-config-file   | yes      | Path to the scanner config file. This is a .properties file containing settings which control the scan flow. |
+| scancode-binary-path  | no       | Path to the scancode binary. Should be set if scancode is enabled in the scanner-config-file.                |
+
