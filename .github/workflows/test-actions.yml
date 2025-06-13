@@ -59,6 +59,46 @@ jobs:
           path: '$TEST_OUTPUT_DIR'
           retention-days: 7
 
+  test-enrich-action:
+    name: Test Enrich Action
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+
+      - name: Test enrich action (without cache)
+        uses: ./enrich
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-enriched-nocache.xls'
+          cache-dependencies: 'false'
+
+      - name: Test enrich action (with cache)
+        uses: ./enrich
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-enriched-cache.xls'
+          cache-dependencies: 'true'
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-outputs-${{ matrix.os }}
+          path: '$TEST_OUTPUT_DIR'
+          retention-days: 7
+
   test-scan-action:
     name: Test Scan Action
     runs-on: ${{ matrix.os }}
@@ -91,7 +131,7 @@ jobs:
         with:
           input-path: 'test/test-inventory.xls'
           output-path: '$TEST_OUTPUT_DIR/test-inventory-scanned-cache.xls'
-          intermediary-dir-path: 'tmp/scan'
+          intermediary-dir-path: '/tmp/scan'
           scanner-config-file: './shared/scan-control.properties'
           cache-dependencies: 'true'
 
@@ -125,4 +165,10 @@ jobs:
             echo "✅ Scan action tests: PASSED" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Scan action tests: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-enrich-action.result }}" == "success" ]]; then
+            echo "✅ Enrich action tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Enrich action tests: FAILED" >> $GITHUB_STEP_SUMMARY
           fi
