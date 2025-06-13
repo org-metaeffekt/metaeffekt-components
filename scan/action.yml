@@ -8,10 +8,10 @@ inputs:
     required: false
     default: 'false'
   input-path:
-    description: 'Path to the input inventory file to enrich.'
+    description: 'Path to the input inventory file to scan.'
     required: true
   output-path:
-    description: 'Path where the enriched inventory will be saved.'
+    description: 'Path where the scanned inventory will be saved.'
     required: true
 
   intermediary-dir-path:
@@ -39,11 +39,11 @@ runs:
         cache-dependencies: ${{ inputs.cache-dependencies }}
 
 
-    - name: Enrich inventory
-      id: enrich
+    - name: Scan inventory
+      id: scan
       shell: bash
       run: |
-        echo "Enriching inventory: ${{ inputs.input-path }} -> ${{ inputs.output-path }}"
+        echo "Scanning inventory: ${{ inputs.input-path }} -> ${{ inputs.output-path }}"
         echo "Using metaeffekt-kontinuum version ${{ steps.setup-kontinuum.outputs.kontinuum-version }}"
         
         if ! command -v mvn &> /dev/null; then
