@@ -77,11 +77,35 @@ jobs:
           distribution: 'zulu'
           java-version: '8'
 
+      - name: Restore cache
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/vulnerability-mirror/index/
+          key: vulnerability-index-${{ env.date }}
+
+      - name: Download and unpack index
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p /tmp/vulnerability-mirror
+          curl -L -o /tmp/index.zip https://metaeffekt.com/security/mirror/index_redux.zip
+          unzip /tmp/index.zip -d /tmp/vulnerability-mirror
+
+      - name: Save cache
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/vulnerability-mirror/index/
+          key: vulnerability-index-${{ env.date }}
+
       - name: Test enrich action (without cache)
         uses: ./enrich
         with:
           input-path: 'test/test-inventory.xls'
           output-path: '$TEST_OUTPUT_DIR/test-inventory-enriched-nocache.xls'
+          intermediary-dir-path: '/tmp/enrich'
+          security-policy-file-path: 'shared/security-policy.json'
+          vulnerability-mirror-path: '/tmp/vulnerability-mirror'
           cache-dependencies: 'false'
 
       - name: Test enrich action (with cache)
@@ -89,6 +113,9 @@ jobs:
         with:
           input-path: 'test/test-inventory.xls'
           output-path: '$TEST_OUTPUT_DIR/test-inventory-enriched-cache.xls'
+          intermediary-dir-path: '/tmp/enrich'
+          security-policy-file-path: 'shared/security-policy.json'
+          vulnerability-mirror-path: '/tmp/vulnerability-mirror'
           cache-dependencies: 'true'
 
       - name: Upload test artifacts
