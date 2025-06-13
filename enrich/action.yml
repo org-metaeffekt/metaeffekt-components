@@ -123,6 +123,6 @@ runs:
           -Dactivate.keywords="${{ inputs.activate-keywords }}" \
           -Dactivate.validation="${{ inputs.activate-validation }}" \
           -Dactivate.vulnerabilities.custom="${{ inputs.activate-custom-vulnerabilities }}" \
-          -Dvulnerabilities.custom.dir="$CUSTOM_VULN_DIR
+          -Dvulnerabilities.custom.dir=""${{ inputs.vulnerabilities-custom-directory }}"
         
         rm -f ae-workbench-parent.xml advise_enrich-inventory.xml
