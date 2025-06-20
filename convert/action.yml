@@ -1,0 +1,195 @@
+name: 'Convert Inventory'
+description: 'Converts an inventory into a SBOM, either in CycloneDX or SPDX format.'
+author: '{metaeffekt} GmbH'
+
+inputs:
+  cache-dependencies:
+    description: 'Cache dependencies to speed up subsequent runs, as well as all other actions contained in this repo.'
+    required: false
+    default: 'false'
+
+  sbom-specification:
+    description: 'Which specification should be used to create the SBOM. Can be cyclonedx or spdx.'
+    required: false
+    default: 'spdx'
+
+  input-path:
+    description: 'Path to the input inventory file to convert.'
+    required: true
+
+  output-path:
+    description: 'Path where the resulting SBOM will be saved.'
+    required: true
+
+  document-name:
+    description: 'Name of the SBOM document.'
+    required: true
+
+  description:
+    description: 'Description of the SBOM document.'
+    required: true
+
+  document-id-prefix:
+    description: 'Prefix to use for the SBOM document identifier.'
+    required: true
+
+  organization:
+    description: 'Name of the organization responsible for the SBOM.'
+    required: true
+
+  organization-url:
+    description: 'URL of the organization.'
+    required: true
+
+  person:
+    description: 'Name of the person responsible for the SBOM.'
+    required: true
+
+  comment:
+    description: 'Additional comments to include in the SBOM.'
+    required: true
+
+  custom-license-mappings:
+    description: 'Path to custom license-mappings file.'
+    required: true
+
+  output-format:
+    description: 'Output format for the SBOM. Can be json or xml.'
+    required: false
+    default: 'json'
+
+  document-version:
+    description: 'Version of the SBOM document.'
+    required: false
+    default: '1'
+
+  map-relationships:
+    description: 'Whether to map relationships in the SBOM.'
+    required: false
+    default: 'true'
+
+  use-license-expressions:
+    description: 'Whether to use license expressions.'
+    required: false
+    default: 'true'
+
+  include-license-texts:
+    description: 'Whether to include full license texts in the SBOM.'
+    required: false
+    default: 'false'
+
+  include-assets:
+    description: 'Whether to include assets in the SBOM.'
+    required: false
+    default: 'true'
+
+  include-technical-properties:
+    description: 'Whether to include technical properties in the SBOM.'
+    required: false
+    default: 'false'
+
+  derive-attributes-from-purl:
+    description: 'Whether to derive component attributes from PURL.'
+    required: false
+    default: 'false'
+
+outputs:
+  sbom:
+    description: 'Path where the resulting SBOM will be saved.'
+    value: ${{ inputs.output-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup metaeffekt-kontinuum
+      id: setup-kontinuum
+      uses: org-metaeffekt/metaeffekt-components/setup-kontinuum@main
+      with:
+        cache-dependencies: ${{ inputs.cache-dependencies }}
+
+    - name: Check Prerequisites
+      id: check-dependencies
+      shell: bash
+      run: |
+        echo "Converting inventory: ${{ inputs.input-path }} -> ${{ inputs.output-path }}"
+        echo "Using metaeffekt-kontinuum version ${{ steps.setup-kontinuum.outputs.kontinuum-version }}"
+        
+        if ! command -v mvn &> /dev/null; then
+          echo "::error::Maven is not available. Please ensure Java and Maven are installed."
+          exit 1
+        fi
+        
+        if [[ "${{ inputs.sbom-specification }}" != "spdx" && "${{ inputs.sbom-specification }}" != "cyclonedx" ]]; then
+          echo "::error::SBOM specification has to be either cyclonedx or spdx."
+          exit 1
+        fi
+        
+        if [[ "${{ inputs.output-format }}" == "json" ]]; then
+          OUTPUT_FORMAT="json"
+        elif [[ "${{ inputs.output-format }}" == "xml" ]]; then
+          OUTPUT_FORMAT="xml"
+        else
+          echo "::error::The provided output format is not supported. Has to be json or xml."
+          exit 1
+        fi
+        
+        echo "OUTPUT_FORMAT=${OUTPUT_FORMAT}" >> $GITHUB_ENV
+
+    - name: Convert inventory to SPDX
+      id: convert-to-spdx
+      if: inputs.sbom-specification == 'spdx'
+      shell: bash
+      run: |
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/ae-workbench-parent.xml" .
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/convert_inventory-to-spdx.xml" .
+
+        mvn -f "convert_inventory-to-spdx.xml" process-resources \
+          -Dinput.inventory="${{ inputs.input-path }}" \
+          -Doutput.bom="${{ inputs.output-path }}" \
+          -DdocumentName="${{ inputs.document-name }}" \
+          -Ddescription="${{ inputs.description }}" \
+          -DdocumentIdPrefix="${{ inputs.document-id-prefix }}" \
+          -Dorganization="${{ inputs.organization }}" \
+          -DorganizationUrl="${{ inputs.organization-url }}" \
+          -Dperson="${{ inputs.person }}" \
+          -Dcomment="${{ inputs.comment }}" \
+          -DoutputFormat="${OUTPUT_FORMAT}" \
+          -DdocumentVersion="${{ inputs.document-version }}" \
+          -DmapRelationships="${{ inputs.map-relationships }}" \
+          -DuseLicenseExpression="${{ inputs.use-license-expressions }}" \
+          -DincludeLicenseTexts="${{ inputs.include-license-texts }}" \
+          -DincludeAssets="${{ inputs.include-assets }}" \
+          -DincludeTechnicalProperties="${{ inputs.include-technical-properties }}" \
+          -DderiveAttributesFromPurl="${{ inputs.derive-attributes-from-purl }}" \
+          -DcustomLicenseMappings="${{ inputs.custom-license-mappings }}"
+
+        rm -f ae-workbench-parent.xml convert_inventory-to-spdx.xml
+
+    - name: Convert inventory to CycloneDX
+      id: convert-to-cyclonedx
+      if: inputs.sbom-specification == 'cyclonedx'
+      shell: bash
+      run: |
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/ae-workbench-parent.xml" .
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/convert_inventory-to-cyclonedx.xml" .
+
+        mvn -f "convert_inventory-to-cyclonedx.xml" process-resources \
+          -Dinput.inventory="${{ inputs.input-path }}" \
+          -Doutput.bom="${{ inputs.output-path }}" \
+          -DdocumentName="${{ inputs.document-name }}" \
+          -Ddescription="${{ inputs.description }}" \
+          -Dorganization="${{ inputs.organization }}" \
+          -DorganizationUrl="${{ inputs.organization-url }}" \
+          -Dperson="${{ inputs.person }}" \
+          -Dcomment="${{ inputs.comment }}" \
+          -DoutputFormat="${OUTPUT_FORMAT}" \
+          -DdocumentVersion="${{ inputs.document-version }}" \
+          -DmapRelationships="${{ inputs.map-relationships }}" \
+          -DuseLicenseExpression="${{ inputs.use-license-expressions }}" \
+          -DincludeLicenseTexts="${{ inputs.include-license-texts }}" \
+          -DincludeAssets="${{ inputs.include-assets }}" \
+          -DincludeTechnicalProperties="${{ inputs.include-technical-properties }}" \
+          -DderiveAttributesFromPurl="${{ inputs.derive-attributes-from-purl }}" \
+          -DcustomLicenseMappings="${{ inputs.custom-license-mappings }}"
+
+        rm -f ae-workbench-parent.xml convert_inventory-to-cyclonedx.xml
