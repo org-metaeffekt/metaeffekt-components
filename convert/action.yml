@@ -43,15 +43,18 @@ inputs:
 
   person:
     description: 'Name of the person responsible for the SBOM.'
-    required: true
+    required: false
+    default: ''
 
   comment:
     description: 'Additional comments to include in the SBOM.'
-    required: true
+    required: false
+    default: ''
 
   custom-license-mappings:
     description: 'Path to custom license-mappings file.'
-    required: true
+    required: false
+    default: ''
 
   output-format:
     description: 'Output format for the SBOM. Can be json or xml.'
