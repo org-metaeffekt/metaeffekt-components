@@ -229,7 +229,7 @@ jobs:
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test-resolve-action]
+    needs: [test-resolve-action, test-scan-action, test-enrich-action, test-convert-action]
     if: always()
 
     steps:
