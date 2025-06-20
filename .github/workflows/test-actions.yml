@@ -170,6 +170,62 @@ jobs:
           path: '$TEST_OUTPUT_DIR'
           retention-days: 7
 
+  test-convert-action:
+    name: Test Convert Action
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+
+      - name: Test convert action (without cache)
+        uses: ./convert
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-converted-nocache.json'
+          document-name: 'Test Document Name'
+          description: 'Test Description'
+          document-id-prefix: 'test-document-id-prefix'
+          organization: '{metaeffekt} GmbH'
+          organization-url: 'https://metaeffekt.com'
+          person: ''
+          comment: 'Test comment'
+          cache-dependencies: 'false'
+          custom-license-mappings: ''
+
+      - name: Test convert action (with cache)
+        uses: ./convert
+        with:
+          input-path: 'test/test-inventory.xls'
+          output-path: '$TEST_OUTPUT_DIR/test-inventory-converted-cache.json'
+          document-name: 'Test Document Name'
+          description: 'Test Description'
+          document-id-prefix: 'test-document-id-prefix'
+          organization: '{metaeffekt} GmbH'
+          organization-url: 'https://metaeffekt.com'
+          person: ''
+          comment: 'Test comment'
+          cache-dependencies: 'true'
+          custom-license-mappings: ''
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-outputs-${{ matrix.os }}
+          path: '$TEST_OUTPUT_DIR'
+          retention-days: 7
+
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
@@ -198,4 +254,10 @@ jobs:
             echo "✅ Enrich action tests: PASSED" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Enrich action tests: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-convert-action.result }}" == "success" ]]; then
+            echo "✅ Convert action tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Convert action tests: FAILED" >> $GITHUB_STEP_SUMMARY
           fi
