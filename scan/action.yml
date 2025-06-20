@@ -1,0 +1,71 @@
+name: 'Scan Inventory'
+description: 'Scans software artifacts listed in an inventory and adds licensing and copyright information using metaeffekt-kontinuum'
+author: '{metaeffekt} GmbH'
+
+inputs:
+  cache-dependencies:
+    description: 'Cache dependencies to speed up subsequent runs, as well as all other actions contained in this repo.'
+    required: false
+    default: 'false'
+  input-path:
+    description: 'Path to the input inventory file to scan.'
+    required: true
+  output-path:
+    description: 'Path where the scanned inventory will be saved.'
+    required: true
+
+  intermediary-dir-path:
+    description: 'A directory for storing intermediaries and analysis results.'
+    required: true
+  scanner-config-file:
+    description: 'A config file containing properties used to control the scan flow and results.'
+    required: true
+  scancode-binary-path:
+    description: 'The path to the scancode binary, necessary if scancode is enabled in the scanner-config-file.'
+    required: false
+
+outputs:
+  scanned-inventory:
+    description: 'Path to the scanned inventory file'
+    value: ${{ inputs.output-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup metaeffekt-kontinuum
+      id: setup-kontinuum
+      uses: org-metaeffekt/metaeffekt-components/setup-kontinuum@main
+      with:
+        cache-dependencies: ${{ inputs.cache-dependencies }}
+
+
+    - name: Scan inventory
+      id: scan
+      shell: bash
+      run: |
+        echo "Scanning inventory: ${{ inputs.input-path }} -> ${{ inputs.output-path }}"
+        echo "Using metaeffekt-kontinuum version ${{ steps.setup-kontinuum.outputs.kontinuum-version }}"
+        
+        if ! command -v mvn &> /dev/null; then
+          echo "::error::Maven is not available. Please ensure Java and Maven are installed."
+          exit 1
+        fi
+        
+        mkdir -p "/tmp/downloads"
+        
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/ae-workbench-parent.xml" .
+        cp "${{ steps.setup-kontinuum.outputs.kontinuum-path }}/scanned_inventory-scanner.xml" .
+        
+        MAVEN_ARGS="-f scanned_inventory-scanner.xml process-resources \
+        -Dinput.inventory=${{ inputs.input-path }} \
+        -Doutput.inventory=${{ inputs.output-path }} \
+        -DanalysisBaseDir=${{ inputs.intermediary-dir-path }} \
+        -DpropertiesFile=${{ inputs.scanner-config-file }}"
+        
+        if [ -n "${{ inputs.scancode-binary-path }}" ]; then
+          MAVEN_ARGS="$MAVEN_ARGS -Dscancode.toolkit.path=${{ inputs.scancode-binary-path }}"
+        fi
+  
+        mvn $MAVEN_ARGS
+          
+        rm -f ae-workbench-parent.xml scanned_inventory-scanner.xml

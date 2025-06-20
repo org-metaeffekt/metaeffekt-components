@@ -13,6 +13,15 @@ inputs:
   output-path:
     description: 'Path where the enriched inventory will be saved.'
     required: true
+  vulnerability-mirror-path:
+    description: 'Path to the vulnerability mirror directory.'
+    required: true
+  security-policy-file-path:
+    description: 'Path to the security policy file.'
+    required: true
+  intermediary-dir-path:
+    description: 'A directory for storing intermediaries and analysis results.'
+    required: true
 
   activate-msrc:
     description: 'Activates enrichment via data provided by msrc.'
@@ -110,6 +119,9 @@ runs:
           -Dinput.inventory="${{ inputs.input-path }}" \
           -Doutput.inventory="${{ inputs.output-path }}" \
           -DdownloadBaseDir="/tmp/downloads" \
+          -Dvulnerability.mirror.dir="${{ inputs.vulnerability-mirror-path }}" \
+          -Dsecurity.policy.file="${{ inputs.security-policy-file-path }}" \
+          -Dprocessor.tmp.dir="${{ inputs.intermediary-dir-path }}" \
           -Dactivate.msrc="${{ inputs.activate-msrc }}" \
           -Dactivate.nvd="${{ inputs.activate-nvd }}" \
           -Dactivate.certfr="${{ inputs.activate-certfr }}" \
@@ -123,6 +135,6 @@ runs:
           -Dactivate.keywords="${{ inputs.activate-keywords }}" \
           -Dactivate.validation="${{ inputs.activate-validation }}" \
           -Dactivate.vulnerabilities.custom="${{ inputs.activate-custom-vulnerabilities }}" \
-          -Dvulnerabilities.custom.dir="$CUSTOM_VULN_DIR
+          -Dvulnerabilities.custom.dir="${{ inputs.vulnerabilities-custom-directory }}"
         
         rm -f ae-workbench-parent.xml advise_enrich-inventory.xml
